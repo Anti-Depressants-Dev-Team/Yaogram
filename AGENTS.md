@@ -19,7 +19,7 @@ wsl.exe -d {distro} --cd /home/{user}/Telegram/tdesktop -- <command>
 - Recursive searches and repo inspection are usually faster and more faithful through WSL, for example `wsl.exe -d {distro} --cd /home/{user}/Telegram/tdesktop -- rg ...`.
 - Do not assume the WSL host has the build toolchain installed directly. In this setup, WSL may not have `cmake`, while Windows may have `cmake`, and the configured `out/` tree may still target the Linux Docker toolchain. Do not run native Windows `cmake --build out` against a Linux/Docker build tree.
 - For WSL/Linux builds, use the Docker build entry point from the repository root: `Telegram/build/docker/centos_env/build_debug.sh`. The Docker daemon must be reachable from WSL; checking `docker info` is fine, but do not start a build unless the user asked for one.
-- Existing build outputs may be Linux binaries, for example `out/Debug/Telegram` as an ELF executable, not `Telegram.exe`. Verify the build tree before assuming which platform produced it.
+- Existing build outputs may be Linux binaries, for example `out/Debug/YaoGram` as an ELF executable, not `YaoGram.exe`. Verify the build tree before assuming which platform produced it.
 - Be careful with text file line endings. In a WSL/Linux checkout, files should remain LF-only unless the file already uses another convention. CRLF finishing applies only to native, non-WSL Windows runs/checkouts. Do not let PowerShell or Windows tools silently rewrite WSL files to CRLF. If a file becomes mixed, normalize it back to the convention appropriate for the current checkout, without adding a UTF-8 BOM.
 - When using the local `task-think` skill from this WSL checkout, keep `.ai/...` artifacts and edited project text files LF-only. Treat the skill's Windows text-normalization phase as not applicable to WSL, except to record that line endings were checked and kept LF/no-BOM. Run CRLF normalization for `task-think` only in a native, non-WSL Windows checkout.
 
@@ -47,7 +47,7 @@ Dependencies are located relative to the repository: `../Libraries`, `../win64/L
 cmake --build out --config Debug --target Telegram
 ```
 
-That's it. The `out/` directory is already configured. The executable will be at `out/Debug/Telegram.exe`.
+That's it. The `out/` directory is already configured. The executable will be at `out/Debug/YaoGram.exe`.
 
 **From WSL, run through the Linux Docker build environment:**
 
@@ -61,6 +61,63 @@ cmake --build "l:\Telegram\tx64\out" --config Debug --target Telegram
 ```
 
 **Never build Release** - it's extremely heavy and not needed for testing changes.
+
+The compiled Debug binary is named **`YaoGram.exe`** on Windows and **`YaoGram`** on Linux/macOS (`OUTPUT_NAME YaoGram` in `Telegram/CMakeLists.txt`).
+
+## Local Smoke Tests
+
+Fast repository checks live under `scripts/smoke/` and do not compile the app unless you explicitly ask for a build.
+
+**Smoke only (recommended default for agents):**
+
+```bash
+python scripts/smoke/run_smoke_tests.py
+```
+
+**Smoke + verify an existing Debug build:**
+
+```bash
+python scripts/run_local_tests.py --verify-build
+```
+
+**Smoke + build Debug + verify output:**
+
+```bash
+python scripts/run_local_tests.py --build
+```
+
+Windows wrapper:
+
+```powershell
+.\scripts\run_local_tests.ps1
+.\scripts\run_local_tests.ps1 -VerifyBuild
+.\scripts\run_local_tests.ps1 -Build
+```
+
+WSL/Linux wrapper:
+
+```bash
+./scripts/run_local_tests.sh
+./scripts/run_local_tests.sh --verify-build
+./scripts/run_local_tests.sh --build
+```
+
+Smoke checks cover required repo paths, YaoGram branding constants, version metadata, submodule checkout, and TL scheme files. With `--verify-build`, the runner also requires a non-trivial Debug binary under `out/Debug/YaoGram.exe` or `out/Debug/YaoGram`.
+
+If the submodule check fails locally, initialize the checkout first:
+
+```bash
+git submodule update --init --recursive
+```
+
+## Continuous Integration
+
+GitHub Actions workflows for this fork:
+
+- **`.github/workflows/smoke.yml`** — runs repository smoke tests on push/PR.
+- **`.github/workflows/build.yml`** — runs smoke tests, then compiles Debug on Windows x64 and Linux Docker, verifying the `YaoGram` binary name.
+
+Upstream-style release workflows (`win.yml`, `linux.yml`, `mac.yml`) may still exist, but Yaogram-specific verification should use the workflows above.
 
 ## Platform-Specific Requirements
 
@@ -100,11 +157,11 @@ On Windows, use the correct Visual Studio Native Tools Command Prompt matching y
 
 If the build fails with ANY of these errors:
 - `fatal error C1041: cannot open program database`
-- `cannot open output file 'Telegram.exe'`
+- `cannot open output file 'YaoGram.exe'`
 - `LNK1104: cannot open file`
 - Any "access denied" or "file in use" error
 
-**STOP IMMEDIATELY.** These errors mean files are locked by a running process (Telegram.exe or debugger).
+**STOP IMMEDIATELY.** These errors mean files are locked by a running process (YaoGram.exe or debugger).
 
 **What to do:**
 1. Do NOT attempt another build - it will fail the same way
@@ -112,7 +169,7 @@ If the build fails with ANY of these errors:
 3. Do NOT try any workarounds or fixes
 4. IMMEDIATELY inform the user:
 
-> "Build failed - files are locked. Please close Telegram.exe (and any debugger) so I can rebuild."
+> "Build failed - files are locked. Please close YaoGram.exe (and any debugger) so I can rebuild."
 
 **Then WAIT for user confirmation before attempting any build.**
 
