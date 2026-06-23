@@ -1,0 +1,33 @@
+name: Smoke.
+
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '!AGENTS.md'
+      - 'changelog.txt'
+      - 'LEGAL'
+      - 'LICENSE'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '!AGENTS.md'
+      - 'changelog.txt'
+      - 'LEGAL'
+      - 'LICENSE'
+
+jobs:
+  smoke:
+    name: Repository smoke tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone.
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Run smoke tests.
+        run: python3 scripts/smoke/run_smoke_tests.py
