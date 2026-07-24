@@ -483,9 +483,9 @@ win:
 """, 'ThirdParty')
 
 stage('python', """
-version: """ + (subprocess.run(['python', '-V'], capture_output=True, text=True, env=modifiedEnv).stdout.strip().split()[-1] if win else '0') + """
+version: """ + (subprocess.run(['py', '-V'], capture_output=True, text=True, env=modifiedEnv).stdout.strip().split()[-1] if win else '0') + """
 win:
-    python -m venv python
+    py -m venv python
     python\\Scripts\\activate.bat
     pip install pywin32 six meson
     deactivate
